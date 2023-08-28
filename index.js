@@ -1,83 +1,198 @@
-const express = require('express'); // import Express package
-const morgan = require('morgan');
-const fs = require('fs'); // import built in node modules fs and path 
-const path = require('path');
+const mongoose = require('mongoose');
+const Models = require('./models.js');
 
-const app = express();
-// create a write stream (in append mode - a ‘log.txt’ file is created in root directory:
-const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {flags: 'a'})
+const Games = Models.Game;
+const Users = Models.User;
 
-
-app.use(morgan('combined', {stream: accessLogStream})); // setup the logger
+//allows Mongoose to connect to that database so it can perform CRUD operations: 
+mongoose.connect('mongodb://localhost:27017/shopDB', { useNewUrlParser: true, useUnifiedTopology: true });
 
 
-
-let users = [
-    {
-      username: "sammyweller",
-      password: "password1",
-      email: "",
-      cart: "Animal Crossing"
-    },
-  
-    {
-      username: "johnsmith",
-      password: "password2",
-      email: "",
-      cart: "Cozy Grove"
-    },
-  
-    {
-      username: "janedoe",
-      password: "password3",
-      email: "",
-      cart: "A Short Hike"
-    }
-
-  ]
-
-let games = [
-  {
-    title: 'Animal Crossing',
-    price: '$59.99'
-  },
-  {
-    title: 'Cozy Grove',
-    price: '$29.99'
-  },
-  {
-    title: 'A Short Hike',
-    price: '$29.99'
-  }
-];
+const express = require('express'); //imports the express module locally so it can be used within the file
+morgan = require('morgan');
+bodyParser = require('body-parser'),
+    uuid = require('uuid');
 
 
-  /* automatically routes all requests for static files to their 
-  corresponding files within a certain folder on the server: */
-  app.use(express.static('public')); 
+const app = express(); //declares a variable that encapsulates Express’s functionality to configure your web server
+
+app.use(morgan('common')); //logging - middleware for Express with common format
+app.use(express.static('public'));
+app.use(bodyParser.json()); //data will be expected to be in JSON format (and read as such).
+
 
 
 // Endpoints
 
+//homepage - works in postman
 app.get('/', (req, res) => {
-  res.send('Welcome to the Cozy Shopper!');
+    res.send('Welcome to the Cozy Shopper!');
 });
 
-app.get('/documentation', (req, res) => {                  
-  res.sendFile('public/documentation.html', { root: __dirname });
+
+// Get list of all games - works in postman
+app.get('/games', async (req, res) => {
+    await Games.find()
+        .then((games) => {
+            res.status(201).json(games);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
 });
 
-app.get('/games', (req, res) => {
-  res.json(games);
+// Get list of single game by title - works in postman
+app.get('/games/:Title', async (req, res) => {
+    await Games.findOne({ Title: req.params.Title })
+        .then((game) => {
+            res.json(game);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
 });
 
+
+
+// Get all users - works in postman
+app.get('/users', async (req, res) => {
+    await Users.find()
+        .then((users) => {
+            res.status(201).json(users);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
+});
+
+
+// Get a user by username - works in postman
+app.get('/users/:Username', async (req, res) => {
+    await Users.findOne({ Username: req.params.Username })
+        .then((user) => {
+            res.json(user);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
+});
+
+
+//Add a user - works in postman
+app.post('/users', async (req, res) => {
+    await Users.findOne({ Username: req.body.Username })
+        .then((user) => {
+            if (user) {
+                return res.status(400).send(req.body.Username + 'already exists');
+            } else {
+                Users
+                    .create({
+                        Username: req.body.Username,
+                        Password: req.body.Password,
+                        Email: req.body.Email,
+                    })
+                    .then((user) => { res.status(201).json(user) })
+                    .catch((error) => {
+                        console.error(error);
+                        res.status(500).send('Error: ' + error);
+                    })
+            }
+        })
+        .catch((error) => {
+            console.error(error);
+            res.status(500).send('Error: ' + error);
+        });
+});
+
+// Delete a user by username - works in postman
+app.delete('/users/:Username', async (req, res) => {
+    await Users.findOneAndRemove({ Username: req.params.Username })
+        .then((user) => {
+            if (!user) {
+                res.status(400).send(req.params.Username + ' was not found');
+            } else {
+                res.status(200).send(req.params.Username + ' was deleted.');
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
+});
+
+
+// Update a user's info, by username - works in postman
+app.put('/users/:Username', async (req, res) => {
+    await Users.findOneAndUpdate({ Username: req.params.Username }, {
+        $set:
+        {
+            Username: req.body.Username,
+            Password: req.body.Password,
+            Email: req.body.Email,
+        }
+    },
+        { new: true }) // This line makes sure that the updated document is returned
+        .then((updatedUser) => {
+            res.json(updatedUser);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send("Error: " + err);
+        })
+});
+
+// Add a game to a user's cart - works in postman
+app.post('/users/:Username/games/:GameID', async (req, res) => {
+    await Users.findOneAndUpdate({ Username: req.params.Username }, {
+        $push: { Cart: req.params.GameID }
+    },
+        { new: true }) // This line makes sure that the updated document is returned
+        .then((updatedUser) => {
+            res.json(updatedUser);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send("Error: " + err);
+        });
+});
+
+// Remove game from user's cart - works in postman
+app.delete('/users/:Username/games/:GameID', async (req, res) => {
+    await Users.findOneAndUpdate(
+        { Username: req.params.Username },
+        { $pull: { Cart: req.params.GameID } },
+        { new: true }
+    )
+    .then((updatedUser) => {
+        res.status(200).send(
+          'The game with ID ' +
+            req.params.GameID +
+            ' was successfully deleted from the cart. ' +
+            'Cart of ' +
+            updatedUser.Username +
+            ': ' +
+            updatedUser.Cart
+        );
+      })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send("Error: " + err);
+        });
+});
+
+
+//error-handling:
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
-  });
+});
 
 
 // listen for requests
 app.listen(8080, () => {
-  console.log('Your app is listening on port 8080.');
+    console.log('Your app is listening on port 8080.');
 });
