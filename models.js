@@ -14,6 +14,7 @@ let gameSchema = mongoose.Schema({
     Email: {type: String, required: true},
     Cart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Game' }]
   });
+
   
   let Game = mongoose.model('Game', gameSchema);
   let User = mongoose.model('User', userSchema);

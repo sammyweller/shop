@@ -20,7 +20,9 @@ app.use(morgan('common')); //logging - middleware for Express with common format
 app.use(express.static('public'));
 app.use(bodyParser.json()); //data will be expected to be in JSON format (and read as such).
 
-
+let auth = require('./auth')(app);
+const passport = require('passport');
+require('./passport');
 
 // Endpoints
 
@@ -57,7 +59,7 @@ app.get('/games/:Title', async (req, res) => {
 
 
 // Get all users - works in postman
-app.get('/users', async (req, res) => {
+app.get('/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.find()
         .then((users) => {
             res.status(201).json(users);
@@ -70,7 +72,7 @@ app.get('/users', async (req, res) => {
 
 
 // Get a user by username - works in postman
-app.get('/users/:Username', async (req, res) => {
+app.get('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOne({ Username: req.params.Username })
         .then((user) => {
             res.json(user);
@@ -109,7 +111,7 @@ app.post('/users', async (req, res) => {
 });
 
 // Delete a user by username - works in postman
-app.delete('/users/:Username', async (req, res) => {
+app.delete('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndRemove({ Username: req.params.Username })
         .then((user) => {
             if (!user) {
@@ -126,7 +128,7 @@ app.delete('/users/:Username', async (req, res) => {
 
 
 // Update a user's info, by username - works in postman
-app.put('/users/:Username', async (req, res) => {
+app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndUpdate({ Username: req.params.Username }, {
         $set:
         {
@@ -146,7 +148,7 @@ app.put('/users/:Username', async (req, res) => {
 });
 
 // Add a game to a user's cart - works in postman
-app.post('/users/:Username/games/:GameID', async (req, res) => {
+app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndUpdate({ Username: req.params.Username }, {
         $push: { Cart: req.params.GameID }
     },
@@ -161,7 +163,7 @@ app.post('/users/:Username/games/:GameID', async (req, res) => {
 });
 
 // Remove game from user's cart - works in postman
-app.delete('/users/:Username/games/:GameID', async (req, res) => {
+app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndUpdate(
         { Username: req.params.Username },
         { $pull: { Cart: req.params.GameID } },
