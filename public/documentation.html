@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Cozy Shopper</title>
+</head>
+<body>
+    <h1>Cozy Shopper</h1>
+
+    <table>
+        <thead>
+          <tr>
+            <th>Request</th>
+            <th>URL</th>
+            <th>HTTP Method</th>
+            <th>Query Parameters</th>
+            <th>Request Body Data Format</th>
+            <th>Response Data Body Format</th>
+          </tr>
+        </thead>
+  
+        <tbody>
+
+          <tr> <!--Return a list of all games-->
+            <td>Get a list of all games</td>
+            <td>/games</td>
+            <td>GET</td>
+            <td>None</td>
+            <td>None</td>
+            <td>A JSON object holding data about all games</td>
+          </tr>
+
+  
+          <tr> <!--Return data about single game title-->
+            <td>Return data about a single game by title</td>
+            <td>/games/:title</td>
+            <td>GET</td>
+            <td>:title</td>
+            <td>None</td>
+            <td>A JSON object holding data about a single game. For example: [title:"", description"", price:"", developers:"", imgPath""]</td>
+          </tr>
+  
+          <tr><!--Allow new users to register-->
+            <td>Add new user</td>
+            <td>/users</td>
+            <td>POST</td>
+            <td>None</td>
+            <td>A JSON object holding data about a user to add. For example: [username:"", password:"", email:"", cart:""]</td>
+            <td>A JSON object holding data about a user who was added. For example: [username:"", password:"", email:"", cart:""]</td>
+          </tr>
+  
+          <tr><!--Allow users to update their user info-->
+            <td>Allow users to update their user info</td>
+            <td>/users/:username</td>
+            <td>PUT</td>
+            <td>:username</td>
+            <td>A JSON object holding data about the updated user information</td>
+            <td>A JSON object holding data about the updated user information</td>
+          </tr>
+  
+  
+          <tr> <!--Allow users to add a game to their cart-->
+            <td>Allows users to add a game to their cart</td>
+            <td>/users/:username/games/:GameID</td>
+            <td>POST</td>
+            <td>:username, :GameID</td>
+            <td>None</td>
+            <td>A JSON object holding data about the user and the game that was added. For example: [title:"", description"", price:"", developers:"", imgPath""]</td>
+          </tr>
+  
+          <tr><!--Allow users to remove a game from their cart-->
+            <td>Allows users to remove a game from their cart</td>
+            <td>/users/:username/games/:GameID</td>
+            <td>DELETE</td>
+            <td>:username, :GameID</td>
+            <td>None</td>
+            <td>Text indicating the game has been removed from the user's cart</td>
+          </tr>
+  
+          <tr><!--Allow existing users to deregister/deleted-->
+            <td>Allows a user to deregister</td>
+            <td>/users/:username</td>
+            <td>DELETE</td>
+            <td>:username</td>
+            <td>None</td>
+            <td>Text confirming the user has been removed</td>
+          </tr>
+        </tbody>
+      </table>
+
+
+
+</body>
+</html>
