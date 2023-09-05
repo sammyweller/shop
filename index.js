@@ -22,10 +22,9 @@ const app = express(); //declares a variable that encapsulates Express’s funct
 
 
 //Allow requests from certain domains:
-//let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'https://cozy-shopper-24251c3233dc.herokuapp.com'];
+const cors = require('cors');
 
-
-let allowedOrigins = ['*'];
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'https://cozy-shopper-24251c3233dc.herokuapp.com'];
 
 app.use(cors({
   origin: (origin, callback) => {
