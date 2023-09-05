@@ -128,13 +128,18 @@ app.delete('/users/:Username', passport.authenticate('jwt', { session: false }),
 
 
 // Update a user's info, by username - works in postman
-app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
+app.put('/users/:Username',  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    // Condition to make sure user can't edit other user's info
+    if(req.user.Username !== req.params.Username){
+        return res.status(400).send('Permission denied');
+    }
+    // Condition ends
     await Users.findOneAndUpdate({ Username: req.params.Username }, {
         $set:
         {
             Username: req.body.Username,
             Password: req.body.Password,
-            Email: req.body.Email,
+            Email: req.body.Email
         }
     },
         { new: true }) // This line makes sure that the updated document is returned
@@ -142,16 +147,18 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }), as
             res.json(updatedUser);
         })
         .catch((err) => {
-            console.error(err);
-            res.status(500).send("Error: " + err);
+            console.log(err);
+            res.status(500).send('Error: ' + err);
         })
 });
 
-// Add a game to a user's cart - works in postman
+
+
+// Add game to cart - works in postman
 app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    await Users.findOneAndUpdate({ Username: req.params.Username }, {
-        $push: { Cart: req.params.GameID }
-    },
+    await Users.findOneAndUpdate(
+        { Username: req.params.Username }, 
+        { $push: { Cart: req.params.GameID } },
         { new: true }) // This line makes sure that the updated document is returned
         .then((updatedUser) => {
             res.json(updatedUser);
@@ -161,6 +168,8 @@ app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { sessio
             res.status(500).send("Error: " + err);
         });
 });
+
+
 
 // Remove game from user's cart - works in postman
 app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
