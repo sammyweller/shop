@@ -20,10 +20,6 @@ bodyParser = require('body-parser'),
 
 const app = express(); //declares a variable that encapsulates Express’s functionality to configure your web server
 
-app.use(morgan('common')); //logging - middleware for Express with common format
-app.use(express.static('public'));
-app.use(bodyParser.json()); //data will be expected to be in JSON format (and read as such).
-
 
 //Allow requests from certain domains:
 //let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'https://cozy-shopper-24251c3233dc.herokuapp.com'];
@@ -41,6 +37,12 @@ app.use(cors({
     return callback(null, true);
   }
 }));
+
+
+app.use(morgan('common')); //logging - middleware for Express with common format
+app.use(express.static('public'));
+app.use(bodyParser.json()); //data will be expected to be in JSON format (and read as such).
+
 
 
 let auth = require('./auth')(app);
