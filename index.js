@@ -26,7 +26,7 @@ app.use(bodyParser.json()); //data will be expected to be in JSON format (and re
 
 
 //Allow requests from certain domains:
-let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'https://cozy-shopper-24251c3233dc.herokuapp.com/'];
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'https://cozy-shopper-24251c3233dc.herokuapp.com'];
 
 app.use(cors({
   origin: (origin, callback) => {
