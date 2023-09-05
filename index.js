@@ -85,7 +85,7 @@ app.get('/games/:Title', async (req, res) => {
 
 
 
-// Get all users - works in postman
+// Get all users - works in postman (unauth)
 app.get('/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.find()
         .then((users) => {
@@ -98,7 +98,7 @@ app.get('/users', passport.authenticate('jwt', { session: false }), async (req, 
 });
 
 
-// Get a user by username - works in postman
+// Get a user by username - 
 app.get('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOne({ Username: req.params.Username })
         .then((user) => {
@@ -111,12 +111,12 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
 });
 
 
-//Add a user - works in postman
+//Add a user - 
 app.post('/users', 
 [
-    check('username', 'Username is required').isLength({min: 5}),
-    check('password', 'Password is required').not().isEmpty(),
-    check('email', 'Email does not appear to be valid').isEmail()
+    check('Username', 'Username is required').isLength({min: 5}),
+    check('Password', 'Password is required').not().isEmpty(),
+    check('Email', 'Email does not appear to be valid').isEmail()
 ],
 async (req, res) => {
 
@@ -153,7 +153,7 @@ async (req, res) => {
         });
 });
 
-// Delete a user by username - works in postman
+// Delete a user by username - 
 app.delete('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndRemove({ Username: req.params.Username })
         .then((user) => {
@@ -170,7 +170,7 @@ app.delete('/users/:Username', passport.authenticate('jwt', { session: false }),
 });
 
 
-// Update a user's info, by username - works in postman
+// Update a user's info, by username - 
 app.put('/users/:Username',  passport.authenticate('jwt', { session: false }), async (req, res) => {
     // Condition to make sure user can't edit other user's info
     if(req.user.Username !== req.params.Username){
@@ -198,7 +198,7 @@ app.put('/users/:Username',  passport.authenticate('jwt', { session: false }), a
 
 
 
-// Add game to cart - works in postman
+// Add game to cart - 
 app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndUpdate(
         { Username: req.params.Username }, 
@@ -215,7 +215,7 @@ app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { sessio
 
 
 
-// Remove game from user's cart - works in postman
+// Remove game from user's cart -
 app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndUpdate(
         { Username: req.params.Username },
