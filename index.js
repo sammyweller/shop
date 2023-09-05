@@ -12,6 +12,8 @@ const express = require('express'); //imports the express module locally so it c
 morgan = require('morgan');
 bodyParser = require('body-parser'),
     uuid = require('uuid');
+    const { check, validationResult } = require('express-validator');
+
 
 
 const app = express(); //declares a variable that encapsulates Express’s functionality to configure your web server
@@ -104,7 +106,22 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
 
 
 //Add a user - works in postman
-app.post('/users', async (req, res) => {
+app.post('/users', 
+[
+    check('username', 'Username is required').isLength({min: 5}),
+    check('password', 'Password is required').not().isEmpty(),
+    check('email', 'Email does not appear to be valid').isEmail()
+],
+async (req, res) => {
+
+      // check the validation object for errors
+      let errors = validationResult(req);
+
+      if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+      }
+
+
     let hashedPassword = Users.hashPassword(req.body.Password);
     await Users.findOne({ Username: req.body.Username })
         .then((user) => {
