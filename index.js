@@ -20,9 +20,28 @@ app.use(morgan('common')); //logging - middleware for Express with common format
 app.use(express.static('public'));
 app.use(bodyParser.json()); //data will be expected to be in JSON format (and read as such).
 
+
+//Allow requests from certain domains:
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){ // If a specific origin isn’t found on the list of allowed origins
+      let message = 'The CORS policy for this application doesn’t allow access from origin ' + origin;
+      return callback(new Error(message ), false);
+    }
+    return callback(null, true);
+  }
+}));
+
+
 let auth = require('./auth')(app);
 const passport = require('passport');
 require('./passport');
+
+
+
 
 // Endpoints
 
@@ -86,6 +105,7 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
 
 //Add a user - works in postman
 app.post('/users', async (req, res) => {
+    let hashedPassword = Users.hashPassword(req.body.Password);
     await Users.findOne({ Username: req.body.Username })
         .then((user) => {
             if (user) {
@@ -94,7 +114,7 @@ app.post('/users', async (req, res) => {
                 Users
                     .create({
                         Username: req.body.Username,
-                        Password: req.body.Password,
+                        Password: hashedPassword,
                         Email: req.body.Email,
                     })
                     .then((user) => { res.status(201).json(user) })
@@ -134,11 +154,12 @@ app.put('/users/:Username',  passport.authenticate('jwt', { session: false }), a
         return res.status(400).send('Permission denied');
     }
     // Condition ends
+    let hashedPassword = Users.hashPassword(req.body.Password);
     await Users.findOneAndUpdate({ Username: req.params.Username }, {
         $set:
         {
             Username: req.body.Username,
-            Password: req.body.Password,
+            Password: hashedPassword,
             Email: req.body.Email
         }
     },

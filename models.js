@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 
 let gameSchema = mongoose.Schema({
@@ -14,6 +15,15 @@ let gameSchema = mongoose.Schema({
     Email: {type: String, required: true},
     Cart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Game' }]
   });
+
+  userSchema.statics.hashPassword = (Password) => {
+    return bcrypt.hashSync(Password, 10);
+  };
+  
+  userSchema.methods.validatePassword = function(Password) {
+    return bcrypt.compareSync(Password, this.Password);
+  };
+  
 
   
   let Game = mongoose.model('Game', gameSchema);
