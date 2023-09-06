@@ -6,7 +6,7 @@ let gameSchema = mongoose.Schema({
     Title: {type: String, required: true},
     Description: {type: String, required: true},
     Price: {type: String, required: true},
-    ImgPath: String,
+    ImgPath: {type: String}
   });
   
   let userSchema = mongoose.Schema({
