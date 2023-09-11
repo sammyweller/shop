@@ -173,10 +173,10 @@ app.delete('/users/:Username', passport.authenticate('jwt', { session: false }),
 // Update a user's info, by username - works in postman
 app.put('/users/:Username',  passport.authenticate('jwt', { session: false }),
 [
-    check('username', 'Username is required').isLength({ min: 5 }),
-    check('username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
-    check('password', 'Password is required').not().isEmpty(),
-    check('email', 'Email does not appear to be valid').isEmail()
+    check('Username', 'Username is required').isLength({ min: 5 }),
+    check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+    check('Password', 'Password is required').not().isEmpty(),
+    check('Email', 'Email does not appear to be valid').isEmail()
   ],
    async (req, res) => {
     let hashedPassword = Users.hashPassword(req.body.Password);
