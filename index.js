@@ -187,6 +187,7 @@ app.put('/users/:Username',  passport.authenticate('jwt', { session: false }),
     check('Email', 'Email does not appear to be valid').isEmail()
   ],
    async (req, res) => {
+    let errors = validationResult(req);
     let hashedPassword = Users.hashPassword(req.body.Password);
     await Users.findOneAndUpdate({ Username: req.params.Username }, {
         $set:
