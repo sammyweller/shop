@@ -223,15 +223,7 @@ app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { sess
         { new: true }
     )
     .then((updatedUser) => {
-        res.status(200).send(
-          'The game with ID ' +
-            req.params.GameID +
-            ' was successfully deleted from the cart. ' +
-            'Cart of ' +
-            updatedUser.Username +
-            ': ' +
-            updatedUser.Cart
-        );
+        res.json(updatedUser);
       })
         .catch((err) => {
             console.error(err);
