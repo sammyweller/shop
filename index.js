@@ -24,6 +24,13 @@ const app = express(); //declares a variable that encapsulates Express’s funct
 //Allow requests from certain domains:
 const cors = require('cors');
 
+app.use(cors({
+  origin: '*'
+}));
+
+/*
+const cors = require('cors');
+
 let allowedOrigins = ['http://localhost:8080', 'http://localhost:1234', 'http://testsite.com', 'https://cozy-shopper-24251c3233dc.herokuapp.com'];
 
 app.use(cors({
@@ -36,6 +43,7 @@ app.use(cors({
     return callback(null, true);
   }
 }));
+*/
 
 
 app.use(morgan('common')); //logging - middleware for Express with common format
