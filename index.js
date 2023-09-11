@@ -171,7 +171,14 @@ app.delete('/users/:Username', passport.authenticate('jwt', { session: false }),
 
 
 // Update a user's info, by username - works in postman
-app.put('/users/:Username',  passport.authenticate('jwt', { session: false }), async (req, res) => {
+app.put('/users/:Username',  passport.authenticate('jwt', { session: false }),
+[
+    check('username', 'Username is required').isLength({ min: 5 }),
+    check('username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+    check('password', 'Password is required').not().isEmpty(),
+    check('email', 'Email does not appear to be valid').isEmail()
+  ],
+   async (req, res) => {
     // Condition to make sure user can't edit other user's info
     if(req.user.Username !== req.params.Username){
         return res.status(400).send('Permission denied');
@@ -187,14 +194,19 @@ app.put('/users/:Username',  passport.authenticate('jwt', { session: false }), a
         }
     },
         { new: true }) // This line makes sure that the updated document is returned
-        .then((updatedUser) => {
-            res.json(updatedUser);
-        })
-        .catch((err) => {
-            console.log(err);
+        .then((user) => {
+            if (!user) {
+              return res.status(404).send('Error: No user was found');
+            } else {
+              res.json(user);
+            }
+          })
+          .catch((err) => {
+            console.error(err);
             res.status(500).send('Error: ' + err);
-        })
-});
+          });
+      });
+    
 
 
 
