@@ -179,11 +179,6 @@ app.put('/users/:Username',  passport.authenticate('jwt', { session: false }),
     check('email', 'Email does not appear to be valid').isEmail()
   ],
    async (req, res) => {
-    // Condition to make sure user can't edit other user's info
-    if(req.user.Username !== req.params.Username){
-        return res.status(400).send('Permission denied');
-    }
-    // Condition ends
     let hashedPassword = Users.hashPassword(req.body.Password);
     await Users.findOneAndUpdate({ Username: req.params.Username }, {
         $set:
