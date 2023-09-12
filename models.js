@@ -16,6 +16,18 @@ let gameSchema = mongoose.Schema({
     Cart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Game' }]
   });
 
+  let cartSchema = mongoose.Schema({
+    items: [
+      {
+        game: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
+        quantity: { type: Number, default: 1 },
+      },
+    ],
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the user (if logged in)
+    anonymousUser: { type: String }, // Identifier for anonymous user
+});
+  
+
   userSchema.statics.hashPassword = (Password) => {
     return bcrypt.hashSync(Password, 10);
   };
@@ -24,10 +36,11 @@ let gameSchema = mongoose.Schema({
     return bcrypt.compareSync(Password, this.Password);
   };
   
-
   
   let Game = mongoose.model('Game', gameSchema);
   let User = mongoose.model('User', userSchema);
+  let Cart = mongoose.model('Cart', cartSchema);
   
   module.exports.Game = Game;
   module.exports.User = User;
+  module.exports.Cart = Cart;

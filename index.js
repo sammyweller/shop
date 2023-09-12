@@ -3,6 +3,7 @@ const Models = require('./models.js');
 
 const Games = Models.Game;
 const Users = Models.User;
+const Cart = Models.Cart;
 
 //allows Mongoose to connect to that database so it can perform CRUD operations: 
 //mongoose.connect('mongodb://localhost:27017/shopDB', { useNewUrlParser: true, useUnifiedTopology: true });
@@ -14,7 +15,7 @@ const express = require('express'); //imports the express module locally so it c
 morgan = require('morgan');
 bodyParser = require('body-parser'),
     uuid = require('uuid');
-    const { check, validationResult } = require('express-validator');
+const { check, validationResult } = require('express-validator');
 
 
 
@@ -25,7 +26,7 @@ const app = express(); //declares a variable that encapsulates Express’s funct
 const cors = require('cors');
 
 app.use(cors({
-  origin: '*'
+    origin: '*'
 }));
 
 /*
@@ -120,46 +121,46 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
 
 
 //Add a user - works in postman
-app.post('/users', 
-[
-    check('Username', 'Username is required').isLength({min: 5}),
-    check('Password', 'Password is required').not().isEmpty(),
-    check('Email', 'Email does not appear to be valid').isEmail()
-],
-async (req, res) => {
+app.post('/users',
+    [
+        check('Username', 'Username is required').isLength({ min: 5 }),
+        check('Password', 'Password is required').not().isEmpty(),
+        check('Email', 'Email does not appear to be valid').isEmail()
+    ],
+    async (req, res) => {
 
-      // check the validation object for errors
-      let errors = validationResult(req);
+        // check the validation object for errors
+        let errors = validationResult(req);
 
-      if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
-      }
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
 
 
-    let hashedPassword = Users.hashPassword(req.body.Password);
-    await Users.findOne({ Username: req.body.Username })
-        .then((user) => {
-            if (user) {
-                return res.status(400).send(req.body.Username + 'already exists');
-            } else {
-                Users
-                    .create({
-                        Username: req.body.Username,
-                        Password: hashedPassword,
-                        Email: req.body.Email,
-                    })
-                    .then((user) => { res.status(201).json(user) })
-                    .catch((error) => {
-                        console.error(error);
-                        res.status(500).send('Error: ' + error);
-                    })
-            }
-        })
-        .catch((error) => {
-            console.error(error);
-            res.status(500).send('Error: ' + error);
-        });
-});
+        let hashedPassword = Users.hashPassword(req.body.Password);
+        await Users.findOne({ Username: req.body.Username })
+            .then((user) => {
+                if (user) {
+                    return res.status(400).send(req.body.Username + 'already exists');
+                } else {
+                    Users
+                        .create({
+                            Username: req.body.Username,
+                            Password: hashedPassword,
+                            Email: req.body.Email,
+                        })
+                        .then((user) => { res.status(201).json(user) })
+                        .catch((error) => {
+                            console.error(error);
+                            res.status(500).send('Error: ' + error);
+                        })
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                res.status(500).send('Error: ' + error);
+            });
+    });
 
 // Delete a user by username - works in postman
 app.delete('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
@@ -179,41 +180,41 @@ app.delete('/users/:Username', passport.authenticate('jwt', { session: false }),
 
 
 // Update a user's info, by username - works in postman
-app.put('/users/:Username',  passport.authenticate('jwt', { session: false }),
-[
-    check('Username', 'Username is required').isLength({ min: 5 }),
-    check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
-    check('Password', 'Password is required').not().isEmpty(),
-    check('Email', 'Email does not appear to be valid').isEmail()
-  ],
-   async (req, res) => {
-    let errors = validationResult(req);
-    let hashedPassword = Users.hashPassword(req.body.Password);
-    await Users.findOneAndUpdate({ Username: req.params.Username }, {
-        $set:
-        {
-            Username: req.body.Username,
-            Password: hashedPassword,
-            Email: req.body.Email
-        }
-    },
-        { new: true }) // This line makes sure that the updated document is returned
-        .then((user) => {
-            if (!user) {
-              return res.status(404).send('Error: No user was found');
-            } else {
-              res.json(user);
+app.put('/users/:Username', passport.authenticate('jwt', { session: false }),
+    [
+        check('Username', 'Username is required').isLength({ min: 5 }),
+        check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+        check('Password', 'Password is required').not().isEmpty(),
+        check('Email', 'Email does not appear to be valid').isEmail()
+    ],
+    async (req, res) => {
+        let errors = validationResult(req);
+        let hashedPassword = Users.hashPassword(req.body.Password);
+        await Users.findOneAndUpdate({ Username: req.params.Username }, {
+            $set:
+            {
+                Username: req.body.Username,
+                Password: hashedPassword,
+                Email: req.body.Email
             }
-          })
-          .catch((err) => {
-            console.error(err);
-            res.status(500).send('Error: ' + err);
-          });
-      });
-    
+        },
+            { new: true }) // This line makes sure that the updated document is returned
+            .then((user) => {
+                if (!user) {
+                    return res.status(404).send('Error: No user was found');
+                } else {
+                    res.json(user);
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                res.status(500).send('Error: ' + err);
+            });
+    });
 
 
 
+/*
 // Add game to cart - works in postman
 app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Users.findOneAndUpdate(
@@ -246,6 +247,98 @@ app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { sess
             res.status(500).send("Error: " + err);
         });
 });
+*/
+
+
+//Create a new anonymous cart when a user adds an item to the cart: - works in postman
+app.post('/cart/add/:GameID', async (req, res) => {
+    const gameID = req.params.GameID;
+    const sessionID = req.sessionID; // session ID for anonymous users
+
+    // Find or create the cart for the anonymous user
+    let cart = await Cart.findOne({ anonymousUser: sessionID });
+
+    if (!cart) {
+        cart = new Cart({ anonymousUser: sessionID });
+    }
+
+    cart.items.push({ game: gameID });
+
+    await cart.save();
+
+    res.json(cart);
+});
+
+
+// Get cart - works in postman
+app.get('/cart', async (req, res) => {
+    const sessionID = req.sessionID; // Use the same identifier for anonymous users
+
+    // Find the cart for the anonymous user
+    const cart = await Cart.findOne({ anonymousUser: sessionID }).populate('items.game');
+
+    if (!cart) {
+        return res.status(404).send('Cart not found');
+    }
+    res.json(cart);
+});
+
+
+
+//Merge the anonymous cart with the user's cart when they log in or create an account - works in postman
+app.post('/users/:Username/merge-cart', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    const username = req.params.Username;
+    const sessionID = req.sessionID; // Use the session ID of the anonymous user
+
+    // Find the user
+    const user = await Users.findOne({ Username: username });
+
+    if (!user) {
+        return res.status(404).send('User not found');
+    }
+
+    // Find the carts for the user and the anonymous user
+    const userCart = await Cart.findOne({ user: user._id });
+    const anonymousCart = await Cart.findOne({ anonymousUser: sessionID });
+
+    if (!anonymousCart) {
+        return res.status(404).send('Anonymous cart not found');
+    }
+
+    // Merge the items from the anonymous cart into the user's cart
+    userCart.items.push(...anonymousCart.items);
+
+    // Remove the anonymous cart
+    await anonymousCart.remove();
+
+    await userCart.save();
+
+    res.json(userCart);
+});
+
+
+// Remove a Game from Cart - works in postman
+app.delete('/cart/remove/:GameID', async (req, res) => {
+    const gameID = req.params.GameID;
+    const sessionID = req.sessionID; // Use the same identifier for anonymous users
+
+    // Find the cart for the anonymous user
+    const cart = await Cart.findOne({ anonymousUser: sessionID });
+
+    if (!cart) {
+        return res.status(404).send('Cart not found');
+    }
+
+    // Remove the game from the cart
+    cart.items = cart.items.filter((item) => item.game.toString() !== gameID);
+
+    await cart.save();
+
+    res.json(cart);
+});
+
+
+
 
 
 //error-handling:
@@ -256,6 +349,6 @@ app.use((err, req, res, next) => {
 
 
 const port = process.env.PORT || 8080;
-app.listen(port, '0.0.0.0',() => {
- console.log('Listening on Port ' + port);
+app.listen(port, '0.0.0.0', () => {
+    console.log('Listening on Port ' + port);
 });
