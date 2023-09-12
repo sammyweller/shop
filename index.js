@@ -250,7 +250,7 @@ app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { sess
 */
 
 
-//Create a new anonymous cart when a user adds an item to the cart: - works in postman
+//Create a new anonymous cart when a user adds an item to the cart - works in postman
 app.post('/cart/add/:GameID', async (req, res) => {
     const gameID = req.params.GameID;
     const sessionID = req.sessionID; // session ID for anonymous users
@@ -285,7 +285,7 @@ app.get('/cart', async (req, res) => {
 
 
 
-//Merge the anonymous cart with the user's cart when they log in or create an account - works in postman
+//Merge the anonymous cart with the user's cart when they log in or create an account 
 app.post('/users/:Username/merge-cart', passport.authenticate('jwt', { session: false }), async (req, res) => {
     const username = req.params.Username;
     const sessionID = req.sessionID; // Use the session ID of the anonymous user
@@ -317,7 +317,7 @@ app.post('/users/:Username/merge-cart', passport.authenticate('jwt', { session: 
 });
 
 
-// Remove a Game from Cart - works in postman
+// Remove a Game from Cart
 app.delete('/cart/remove/:GameID', async (req, res) => {
     const gameID = req.params.GameID;
     const sessionID = req.sessionID; // Use the same identifier for anonymous users
