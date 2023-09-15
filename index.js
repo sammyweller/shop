@@ -6,8 +6,8 @@ const Users = Models.User;
 const Cart = Models.Cart;
 
 //allows Mongoose to connect to that database so it can perform CRUD operations: 
-//mongoose.connect('mongodb://localhost:27017/shopDB', { useNewUrlParser: true, useUnifiedTopology: true });
-mongoose.connect( process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect('mongodb://localhost:27017/shopDB', { useNewUrlParser: true, useUnifiedTopology: true });
+// mongoose.connect( process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 
 
@@ -218,98 +218,94 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }),
     });
 
 
+
+
+
+
 // Add to Cart Endpoint
 app.post('/cart/add/:GameID', async (req, res) => {
-    const gameID = req.params.GameID;
-    const user = req.user; // This may be undefined for unauthenticated users
+const gameID = req.params.GameID;
+const user = req.user; // This may be undefined for unauthenticated users
 
-    try {
-        // Find or create a cart for the user (whether logged in or not)
-        let cart = await Cart.findOne({ user: user ? user._id : undefined });
+try {
+    // Find or create a cart for the user (whether logged in or not)
+    let cart = await Cart.findOne({ user: user ? user._id : undefined });
 
-        if (!cart) {
-            // If the cart doesn't exist, create a new one
-            cart = new Cart({
-                user: user ? user._id : undefined,
-                items: [],
-            });
-        }
-
-        // Check if the game is already in the cart
-        const existingItem = cart.items.find((item) => item.game.toString() === gameID);
-
-        if (existingItem) {
-            // If the game is already in the cart, increase its quantity
-            existingItem.quantity += 1;
-        } else {
-            // If the game is not in the cart, add it with a quantity of 1
-            cart.items.push({ game: gameID, quantity: 1 });
-        }
-
-        await cart.save();
-
-        res.json(cart);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error adding item to cart');
+    if (!cart) {
+        // If the cart doesn't exist, create a new one
+        cart = new Cart({
+            user: user ? user._id : undefined,
+            items: [],
+        });
     }
+
+    // Check if the game is already in the cart
+    const existingItem = cart.items.find((item) => item.game.toString() === gameID);
+
+    if (existingItem) {
+        // If the game is already in the cart, increase its quantity
+        existingItem.quantity += 1;
+    } else {
+        // If the game is not in the cart, add it with a quantity of 1
+        cart.items.push({ game: gameID, quantity: 1 });
+    }
+
+    await cart.save();
+
+    res.json(cart);
+} catch (error) {
+    console.error(error);
+    res.status(500).send('Error adding item to cart');
+}
 });
-
-
-
 
 // Remove an item from the cart for a user (logged-in or anonymous)
 app.delete('/cart/remove/:GameID', async (req, res) => {
-    const gameIDToRemove = req.params.GameID;
-    const user = req.user; // Use the user object if the user is logged in
+const gameIDToRemove = req.params.GameID;
+const user = req.user; // Use the user object if the user is logged in
 
-    try {
-        // Find the cart for the user (whether logged in or not)
-        const cart = await Cart.findOne({ user: user ? user._id : undefined });
+try {
+    // Find the cart for the user (whether logged in or not)
+    const cart = await Cart.findOne({ user: user ? user._id : undefined });
 
-        if (!cart) {
-            return res.status(404).send('Cart not found');
-        }
-
-        // Find the index of the item with the specified game ID
-        const itemIndex = cart.items.findIndex((item) => item.game.toString() === gameIDToRemove);
-
-        if (itemIndex !== -1) {
-            // If the item exists in the cart, remove it
-            cart.items.splice(itemIndex, 1);
-            await cart.save();
-        }
-
-        res.json(cart);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error removing item from cart');
+    if (!cart) {
+        return res.status(404).send('Cart not found');
     }
+
+    // Find the index of the item with the specified game ID
+    const itemIndex = cart.items.findIndex((item) => item.game.toString() === gameIDToRemove);
+
+    if (itemIndex !== -1) {
+        // If the item exists in the cart, remove it
+        cart.items.splice(itemIndex, 1);
+        await cart.save();
+    }
+
+    res.json(cart);
+} catch (error) {
+    console.error(error);
+    res.status(500).send('Error removing item from cart');
+}
 });
-
-
-
 
 // Get Cart Endpoint
 app.get('/cart', async (req, res) => {
-    const user = req.user; // This may be undefined for unauthenticated users
+const user = req.user; // This may be undefined for unauthenticated users
 
-    try {
-        // Find the cart for the user (whether logged in or not)
-        const cart = await Cart.findOne({ user: user ? user._id : undefined }).populate('items.game');
+try {
+    // Find the cart for the user (whether logged in or not)
+    const cart = await Cart.findOne({ user: user ? user._id : undefined }).populate('items.game');
 
-        if (!cart) {
-            return res.status(404).send('Cart not found');
-        }
-
-        res.json(cart);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error fetching cart');
+    if (!cart) {
+        return res.status(404).send('Cart not found');
     }
+
+    res.json(cart);
+} catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching cart');
+}
 });
-
-
 
 
 
