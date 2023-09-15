@@ -221,80 +221,187 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }),
 
 
 
+// CREATE: Allow users to add a game to wishlist
+app.post('/users/:Username/wishlist/:gameId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            { Username: req.params.Username },
+            { $push: { Wishlist: req.params.gameId } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).send("User not found");
+        }
+
+        return res.json(updatedUser);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Error: ' + err);
+    }
+});
+
+// DELETE: Allow users to remove a game from wishlist
+app.delete('/users/:Username/wishlist/:gameId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            { Username: req.params.Username },
+            { $pull: { Wishlist: req.params.gameId } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).send("User not found");
+        }
+
+        return res.json(updatedUser);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Error: ' + err);
+    }
+});
 
 
 
 
-    app.post('/cart/add/:gameId', async (req, res) => {
-        try {
-            const gameId = req.params.gameId;
-            const cartId = req.sessionID || uuid.v4(); // Use a session ID or generate a unique ID
-            
-            // Retrieve the cart for the current session/user
-            let cart = req.cookies[`cart_${cartId}`] || [];
-            
-            // Check if the game exists
-            const game = await Games.findById(gameId);
-            if (!game) {
-                return res.status(404).json({ error: 'Game not found' });
+//add to played
+app.post('/users/:Username/played/:gameId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        const user = await Users.findOne({ Username: req.params.Username });
+
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        const game = await Games.findOne({ _id: req.params.gameId });
+
+        if (!game) {
+            return res.status(404).send('Game not found');
+        }
+
+        const isInWishlist = user.Wishlist.some(item => item.equals(game._id));
+
+        if (isInWishlist) {
+            user.Wishlist = user.Wishlist.filter(item => !item.equals(game._id));
+        }
+
+        user.Played.push(game._id);
+        await user.save();
+
+        return res.status(201).json(user.Played);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
+
+
+
+// Remove a game from the user's played list
+app.delete('/users/:Username/played/:gameId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        const user = await Users.findOne({ Username: req.params.Username });
+
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        const game = await Games.findOne({ _id: req.params.gameId });
+
+        if (!game) {
+            return res.status(404).send('Game not found');
+        }
+
+        const isInPlayed = user.Played.some(item => item.equals(game._id));
+
+        if (!isInPlayed) {
+            return res.status(400).send('Game is not in the played list');
+        }
+
+        user.Played = user.Played.filter(item => !item.equals(game._id));
+        await user.save();
+
+        return res.status(200).json(user.Played);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
+
+
+// Add a game to the cart
+app.post('/cart/:gameId', async (req, res) => {
+    try {
+        const game = await Games.findOne({ _id: req.params.gameId });
+
+        if (!game) {
+            return res.status(404).send('Game not found');
+        }
+
+        const cart = req.cookies.cart || [];
+
+        const isInCart = cart.includes(req.params.gameId); 
+        if (isInCart) {
+            return res.status(400).send('Game is already in the cart');
+        }
+
+        cart.push(req.params.gameId);
+
+        res.cookie('cart', cart);
+
+        return res.status(201).json(cart);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
+
+
+// Remove a game from the cart
+app.delete('/cart/:gameId', async (req, res) => {
+    try {
+        let cart = req.cookies.cart || [];
+
+        const gameIdToRemove = req.params.gameId;
+
+        const indexOfGameToRemove = cart.indexOf(gameIdToRemove);
+
+        if (indexOfGameToRemove === -1) {
+            return res.status(404).send('Game is not in the cart');
+        }
+
+        cart.splice(indexOfGameToRemove, 1);
+
+        res.cookie('cart', cart);
+
+        return res.status(200).json(cart);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
+
+// Get the contents of the cart
+app.get('/cart', async (req, res) => {
+    try {
+        const cart = req.cookies.cart || [];
+
+
+        const gameDetails = [];
+
+        for (const gameId of cart) {
+            const game = await Games.findOne({ _id: gameId });
+            if (game) {
+                gameDetails.push(game);
             }
-            
-            // Add the game to the cart
-            cart.push(game);
-            
-            // Store the updated cart in a cookie
-            res.cookie(`cart_${cartId}`, cart);
-            
-            return res.status(200).json(cart);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
         }
-    });
 
-
-    app.delete('/cart/remove/:gameId', async (req, res) => {
-        try {
-            const gameId = req.params.gameId;
-            const cartId = req.sessionID || uuid.v4(); // Use a session ID or generate a unique ID
-            
-            // Retrieve the cart for the current session/user
-            let cart = req.cookies[`cart_${cartId}`] || [];
-            
-            // Check if the game is in the cart
-            const index = cart.findIndex(item => item._id === gameId);
-            if (index === -1) {
-                return res.status(404).json({ error: 'Game not found in cart' });
-            }
-            
-            // Remove the game from the cart
-            cart.splice(index, 1);
-            
-            // Store the updated cart in a cookie
-            res.cookie(`cart_${cartId}`, cart);
-            
-            return res.status(200).json(cart);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    });
-
-
-
-    app.get('/cart', (req, res) => {
-        try {
-            const cartId = req.sessionID || uuid.v4(); // Use a session ID or generate a unique ID
-            
-            // Retrieve the cart for the current session/user
-            const cart = req.cookies[`cart_${cartId}`] || [];
-            
-            return res.status(200).json(cart);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    });
+        return res.status(200).json(gameDetails);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
 
 
 
