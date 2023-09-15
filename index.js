@@ -12,6 +12,7 @@ mongoose.connect( process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifie
 
 
 const express = require('express'); //imports the express module locally so it can be used within the file
+const cookieParser = require('cookie-parser'); // Import cookie-parser
 morgan = require('morgan');
 bodyParser = require('body-parser'),
     uuid = require('uuid');
@@ -28,6 +29,8 @@ const cors = require('cors');
 app.use(cors({
     origin: '*'
 }));
+
+
 
 /*
 const cors = require('cors');
@@ -50,6 +53,8 @@ app.use(cors({
 app.use(morgan('common')); //logging - middleware for Express with common format
 app.use(express.static('public'));
 app.use(bodyParser.json()); //data will be expected to be in JSON format (and read as such).
+app.use(cookieParser());
+
 
 
 
@@ -213,128 +218,95 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }),
     });
 
 
-
-/*
-// Add game to cart - works in postman
-app.post('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    await Users.findOneAndUpdate(
-        { Username: req.params.Username }, 
-        { $push: { Cart: req.params.GameID } },
-        { new: true }) // This line makes sure that the updated document is returned
-        .then((updatedUser) => {
-            res.json(updatedUser);
-        })
-        .catch((err) => {
-            console.error(err);
-            res.status(500).send("Error: " + err);
-        });
-});
-
-
-
-// Remove game from user's cart - works in postman
-app.delete('/users/:Username/games/:GameID', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    await Users.findOneAndUpdate(
-        { Username: req.params.Username },
-        { $pull: { Cart: req.params.GameID } },
-        { new: true }
-    )
-    .then((updatedUser) => {
-        res.json(updatedUser);
-      })
-        .catch((err) => {
-            console.error(err);
-            res.status(500).send("Error: " + err);
-        });
-});
-*/
-
-
-//Create a new anonymous cart when a user adds an item to the cart - works in postman
+// Add to Cart Endpoint
 app.post('/cart/add/:GameID', async (req, res) => {
     const gameID = req.params.GameID;
-    const sessionID = req.sessionID; // session ID for anonymous users
+    const user = req.user; // This may be undefined for unauthenticated users
 
-    // Find or create the cart for the anonymous user
-    let cart = await Cart.findOne({ anonymousUser: sessionID });
+    try {
+        // Find or create a cart for the user (whether logged in or not)
+        let cart = await Cart.findOne({ user: user ? user._id : undefined });
 
-    if (!cart) {
-        cart = new Cart({ anonymousUser: sessionID });
+        if (!cart) {
+            // If the cart doesn't exist, create a new one
+            cart = new Cart({
+                user: user ? user._id : undefined,
+                items: [],
+            });
+        }
+
+        // Check if the game is already in the cart
+        const existingItem = cart.items.find((item) => item.game.toString() === gameID);
+
+        if (existingItem) {
+            // If the game is already in the cart, increase its quantity
+            existingItem.quantity += 1;
+        } else {
+            // If the game is not in the cart, add it with a quantity of 1
+            cart.items.push({ game: gameID, quantity: 1 });
+        }
+
+        await cart.save();
+
+        res.json(cart);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error adding item to cart');
     }
-
-    cart.items.push({ game: gameID });
-
-    await cart.save();
-
-    res.json(cart);
 });
 
 
-// Get cart - works in postman
-app.get('/cart', async (req, res) => {
-    const sessionID = req.sessionID; // Use the same identifier for anonymous users
-
-    // Find the cart for the anonymous user
-    const cart = await Cart.findOne({ anonymousUser: sessionID }).populate('items.game');
-
-    if (!cart) {
-        return res.status(404).send('Cart not found');
-    }
-    res.json(cart);
-});
 
 
-
-//Merge the anonymous cart with the user's cart when they log in or create an account 
-app.post('/users/:Username/merge-cart', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    const username = req.params.Username;
-    const sessionID = req.sessionID; // Use the session ID of the anonymous user
-
-    // Find the user
-    const user = await Users.findOne({ Username: username });
-
-    if (!user) {
-        return res.status(404).send('User not found');
-    }
-
-    // Find the carts for the user and the anonymous user
-    const userCart = await Cart.findOne({ user: user._id });
-    const anonymousCart = await Cart.findOne({ anonymousUser: sessionID });
-
-    if (!anonymousCart) {
-        return res.status(404).send('Anonymous cart not found');
-    }
-
-    // Merge the items from the anonymous cart into the user's cart
-    userCart.items.push(...anonymousCart.items);
-
-    // Remove the anonymous cart
-    await anonymousCart.remove();
-
-    await userCart.save();
-
-    res.json(userCart);
-});
-
-
-// Remove a Game from Cart
+// Remove an item from the cart for a user (logged-in or anonymous)
 app.delete('/cart/remove/:GameID', async (req, res) => {
-    const gameID = req.params.GameID;
-    const sessionID = req.sessionID; // Use the same identifier for anonymous users
+    const gameIDToRemove = req.params.GameID;
+    const user = req.user; // Use the user object if the user is logged in
 
-    // Find the cart for the anonymous user
-    const cart = await Cart.findOne({ anonymousUser: sessionID });
+    try {
+        // Find the cart for the user (whether logged in or not)
+        const cart = await Cart.findOne({ user: user ? user._id : undefined });
 
-    if (!cart) {
-        return res.status(404).send('Cart not found');
+        if (!cart) {
+            return res.status(404).send('Cart not found');
+        }
+
+        // Find the index of the item with the specified game ID
+        const itemIndex = cart.items.findIndex((item) => item.game.toString() === gameIDToRemove);
+
+        if (itemIndex !== -1) {
+            // If the item exists in the cart, remove it
+            cart.items.splice(itemIndex, 1);
+            await cart.save();
+        }
+
+        res.json(cart);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error removing item from cart');
     }
+});
 
-    // Remove the game from the cart
-    cart.items = cart.items.filter((item) => item.game.toString() !== gameID);
 
-    await cart.save();
 
-    res.json(cart);
+
+// Get Cart Endpoint
+app.get('/cart', async (req, res) => {
+    const user = req.user; // This may be undefined for unauthenticated users
+
+    try {
+        // Find the cart for the user (whether logged in or not)
+        const cart = await Cart.findOne({ user: user ? user._id : undefined }).populate('items.game');
+
+        if (!cart) {
+            return res.status(404).send('Cart not found');
+        }
+
+        res.json(cart);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching cart');
+    }
 });
 
 

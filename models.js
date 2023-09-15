@@ -19,12 +19,11 @@ let gameSchema = mongoose.Schema({
   let cartSchema = mongoose.Schema({
     items: [
       {
-        game: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
-        quantity: { type: Number, default: 1 },
+          game: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
+          quantity: { type: Number },
       },
-    ],
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the user (if logged in)
-    anonymousUser: { type: String }, // Identifier for anonymous user
+  ],
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the user (if logged in)
 });
   
 
@@ -40,6 +39,7 @@ let gameSchema = mongoose.Schema({
   let Game = mongoose.model('Game', gameSchema);
   let User = mongoose.model('User', userSchema);
   let Cart = mongoose.model('Cart', cartSchema);
+
   
   module.exports.Game = Game;
   module.exports.User = User;
