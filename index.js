@@ -222,90 +222,79 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }),
 
 
 
-// Add to Cart Endpoint
-app.post('/cart/add/:GameID', async (req, res) => {
-const gameID = req.params.GameID;
-const user = req.user; // This may be undefined for unauthenticated users
 
-try {
-    // Find or create a cart for the user (whether logged in or not)
-    let cart = await Cart.findOne({ user: user ? user._id : undefined });
 
-    if (!cart) {
-        // If the cart doesn't exist, create a new one
-        cart = new Cart({
-            user: user ? user._id : undefined,
-            items: [],
-        });
-    }
 
-    // Check if the game is already in the cart
-    const existingItem = cart.items.find((item) => item.game.toString() === gameID);
+    app.post('/cart/add/:gameId', async (req, res) => {
+        try {
+            const gameId = req.params.gameId;
+            const cartId = req.sessionID || uuid.v4(); // Use a session ID or generate a unique ID
+            
+            // Retrieve the cart for the current session/user
+            let cart = req.cookies[`cart_${cartId}`] || [];
+            
+            // Check if the game exists
+            const game = await Games.findById(gameId);
+            if (!game) {
+                return res.status(404).json({ error: 'Game not found' });
+            }
+            
+            // Add the game to the cart
+            cart.push(game);
+            
+            // Store the updated cart in a cookie
+            res.cookie(`cart_${cartId}`, cart);
+            
+            return res.status(200).json(cart);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
 
-    if (existingItem) {
-        // If the game is already in the cart, increase its quantity
-        existingItem.quantity += 1;
-    } else {
-        // If the game is not in the cart, add it with a quantity of 1
-        cart.items.push({ game: gameID, quantity: 1 });
-    }
 
-    await cart.save();
+    app.delete('/cart/remove/:gameId', async (req, res) => {
+        try {
+            const gameId = req.params.gameId;
+            const cartId = req.sessionID || uuid.v4(); // Use a session ID or generate a unique ID
+            
+            // Retrieve the cart for the current session/user
+            let cart = req.cookies[`cart_${cartId}`] || [];
+            
+            // Check if the game is in the cart
+            const index = cart.findIndex(item => item._id === gameId);
+            if (index === -1) {
+                return res.status(404).json({ error: 'Game not found in cart' });
+            }
+            
+            // Remove the game from the cart
+            cart.splice(index, 1);
+            
+            // Store the updated cart in a cookie
+            res.cookie(`cart_${cartId}`, cart);
+            
+            return res.status(200).json(cart);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
 
-    res.json(cart);
-} catch (error) {
-    console.error(error);
-    res.status(500).send('Error adding item to cart');
-}
-});
 
-// Remove an item from the cart for a user (logged-in or anonymous)
-app.delete('/cart/remove/:GameID', async (req, res) => {
-const gameIDToRemove = req.params.GameID;
-const user = req.user; // Use the user object if the user is logged in
 
-try {
-    // Find the cart for the user (whether logged in or not)
-    const cart = await Cart.findOne({ user: user ? user._id : undefined });
-
-    if (!cart) {
-        return res.status(404).send('Cart not found');
-    }
-
-    // Find the index of the item with the specified game ID
-    const itemIndex = cart.items.findIndex((item) => item.game.toString() === gameIDToRemove);
-
-    if (itemIndex !== -1) {
-        // If the item exists in the cart, remove it
-        cart.items.splice(itemIndex, 1);
-        await cart.save();
-    }
-
-    res.json(cart);
-} catch (error) {
-    console.error(error);
-    res.status(500).send('Error removing item from cart');
-}
-});
-
-// Get Cart Endpoint
-app.get('/cart', async (req, res) => {
-const user = req.user; // This may be undefined for unauthenticated users
-
-try {
-    // Find the cart for the user (whether logged in or not)
-    const cart = await Cart.findOne({ user: user ? user._id : undefined }).populate('items.game');
-
-    if (!cart) {
-        return res.status(404).send('Cart not found');
-    }
-
-    res.json(cart);
-} catch (error) {
-    console.error(error);
-    res.status(500).send('Error fetching cart');
-}
-});
+    app.get('/cart', (req, res) => {
+        try {
+            const cartId = req.sessionID || uuid.v4(); // Use a session ID or generate a unique ID
+            
+            // Retrieve the cart for the current session/user
+            const cart = req.cookies[`cart_${cartId}`] || [];
+            
+            return res.status(200).json(cart);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
 
 
 

@@ -17,13 +17,8 @@ let gameSchema = mongoose.Schema({
   });
 
   let cartSchema = mongoose.Schema({
-    items: [
-      {
-          game: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
-          quantity: { type: Number },
-      },
-  ],
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the user (if logged in)
+    items: [gameSchema],
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the user (if logged in)
 });
   
 
