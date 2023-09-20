@@ -3,10 +3,10 @@ const Models = require('./models.js');
 
 const Games = Models.Game;
 const Users = Models.User;
-const Cart = Models.Cart;
+const Cart = Models.Cart; 
 
 //allows Mongoose to connect to that database so it can perform CRUD operations: 
-// mongoose.connect('mongodb://localhost:27017/shopDB', { useNewUrlParser: true, useUnifiedTopology: true });
+//mongoose.connect('mongodb://localhost:27017/shopDB', { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.connect( process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 
@@ -329,24 +329,42 @@ app.delete('/users/:Username/played/:gameId', passport.authenticate('jwt', { ses
 });
 
 
+
+
+
+// Get the contents of the cart
+app.get('/cart', async (req, res) => {
+    try {
+        // Retrieve the cart from the cookies
+        const cart = req.cookies.cart || [];
+
+        // You can add more logic here to fetch additional details about the games in the cart
+        // For now, let's just return the game IDs in the cart
+        return res.status(200).json(cart);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
+
 // Add a game to the cart
 app.post('/cart/:gameId', async (req, res) => {
     try {
-        const game = await Games.findOne({ _id: req.params.gameId });
+        // Retrieve the game ID from the request parameters
+        const gameId = req.params.gameId;
 
-        if (!game) {
-            return res.status(404).send('Game not found');
-        }
-
+        // Retrieve the cart from the cookies or initialize an empty cart if it doesn't exist
         const cart = req.cookies.cart || [];
 
-        const isInCart = cart.includes(req.params.gameId); 
-        if (isInCart) {
+        // Check if the game ID is already in the cart
+        if (cart.includes(gameId)) {
             return res.status(400).send('Game is already in the cart');
         }
 
-        cart.push(req.params.gameId);
+        // Add the game ID to the cart
+        cart.push(gameId);
 
+        // Set the updated cart in the cookies
         res.cookie('cart', cart);
 
         return res.status(201).json(cart);
@@ -356,22 +374,26 @@ app.post('/cart/:gameId', async (req, res) => {
     }
 });
 
-
 // Remove a game from the cart
 app.delete('/cart/:gameId', async (req, res) => {
     try {
-        let cart = req.cookies.cart || [];
-
+        // Retrieve the game ID from the request parameters
         const gameIdToRemove = req.params.gameId;
 
+        // Retrieve the cart from the cookies or initialize an empty cart if it doesn't exist
+        const cart = req.cookies.cart || [];
+
+        // Check if the game ID is in the cart
         const indexOfGameToRemove = cart.indexOf(gameIdToRemove);
 
         if (indexOfGameToRemove === -1) {
-            return res.status(404).send('Game is not in the cart');
+            return res.status(400).send('Game is not in the cart');
         }
 
+        // Remove the game from the cart
         cart.splice(indexOfGameToRemove, 1);
 
+        // Update the cart in the cookies
         res.cookie('cart', cart);
 
         return res.status(200).json(cart);
@@ -381,27 +403,7 @@ app.delete('/cart/:gameId', async (req, res) => {
     }
 });
 
-// Get the contents of the cart
-app.get('/cart', async (req, res) => {
-    try {
-        const cart = req.cookies.cart || [];
 
-
-        const gameDetails = [];
-
-        for (const gameId of cart) {
-            const game = await Games.findOne({ _id: gameId });
-            if (game) {
-                gameDetails.push(game);
-            }
-        }
-
-        return res.status(200).json(gameDetails);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error: ' + error);
-    }
-});
 
 
 
